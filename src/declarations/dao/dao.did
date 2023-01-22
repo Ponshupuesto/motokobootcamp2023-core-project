@@ -1,0 +1,34 @@
+type Proposal = 
+ record {
+   creator: principal;
+   id: nat;
+   payload: text;
+   time: int;
+   voters: List;
+   votesNo: int;
+   votesYes: nat;
+ };
+type List = 
+ opt record {
+       principal;
+       List;
+     };
+service : {
+  getMbBalance: (principal) -> (nat);
+  get_all_proposals: () -> (vec record {
+                                  int;
+                                  Proposal;
+                                }) query;
+  get_proposal: (nat) -> (opt Proposal) query;
+  submit_proposal: (text) -> (variant {
+                                Err: text;
+                                Ok: Proposal;
+                              });
+  vote: (int, bool) -> (variant {
+                          Err: text;
+                          Ok: record {
+                                nat;
+                                nat;
+                              };
+                        });
+}
