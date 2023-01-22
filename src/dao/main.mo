@@ -8,6 +8,7 @@ import List "mo:base/List";
 import Int "mo:base/Int";
 import Time "mo:base/Time";
 import Array "mo:base/Array";
+import Prelude "mo:base/Prelude";
 
 
 
@@ -19,13 +20,13 @@ actor {
     //Feel free to DM me any question.
 
     stable var proposalsID = 0;
-    stable var proposalEntries : [(Nat, Proposal)] = [];
+    stable var proposalEntries : [(Int, Proposal)] = [];
 
-    func natHash(n : Nat) : Hash.Hash { 
-        Text.hash(Nat.toText(n));
+    func natHash(n : Int) : Hash.Hash { 
+        Text.hash(Int.toText(n));
     };
 
-    let proposals = HashMap.fromIter<Nat, Proposal>(proposalEntries.vals(), Iter.size(proposalEntries.vals()), Nat.equal, natHash);
+    let proposals = HashMap.fromIter<Int, Proposal>(proposalEntries.vals(), Iter.size(proposalEntries.vals()), Int.equal, natHash);
 
 
     
@@ -35,24 +36,25 @@ actor {
 
 
     type Proposal = {
-        id : Nat;
-        creator : Principal;
-        votesYes : Nat;
-        votesNo: Nat;
-        voters : List.List<Principal>;
+        creator : Account;
         payload : Text;
-        time : Int;
-
+        status: {#Open; #Passed; #Rejected;};
+        timestamp : Int;
+        votes : (Nat,Nat);
+        voters : List.List<Principal>;
     };// TO DEFINE;
 
 
     type Status ={
-        #failed : Text;
-        #open;
-        #rejected;
-        #accepted;
-
+        #Open;
+        #Passed;
+        #Rejected;
     };
+
+    type Account = {
+   owner: Principal;
+   subaccount: ?Subaccount;
+ };
 
     public type Subaccount = [Nat8];
     public type Account__1 = { owner : Principal; subaccount : ?Subaccount };
@@ -67,16 +69,7 @@ actor {
     let MotokoToken : actor {icrc1_balance_of : shared query Account__1 -> async Balance__1;
     } = actor("db3eq-6iaaa-aaaah-abz6a-cai");
 
-        /* public shared ({caller})func getMbBalance(id : Principal) : async Nat {
-        let account1 : Account__1 = {owner = caller; subaccount = null};
-        return await MotokoToken.icrc1_balance_of(account1);
-  };  */
 
-
-/*   public shared ({caller})func getMbBalance(id : Principal) : async Nat {
-        let account1 : Account__1 = {owner = caller; subaccount = null};
-        return await MotokoToken.icrc1_balance_of(account1);
-  };  */
 
     public func getMbBalance(id:Principal) : async Nat {
         let account1 : Account__1 = {owner = id; subaccount = null};
@@ -96,27 +89,33 @@ actor {
         proposalsID += 1;
         var timeStamp = Time.now();
 
-        let newProposal : Proposal ={
-            id = proposalsID;
-            creator = caller;
-            votesYes = 0;
-            votesNo = 0;
-            voters = List.nil<Principal>();
+        var newProposal : Proposal ={
+            creator = {owner = caller; subaccount = null;};
             payload = this_payload;
-            time = timeStamp;
+            status = #Open;
+            timestamp = timeStamp;
+            voters = List.nil<Principal>();
+            votes = (0,0);
         };
 
-        proposals.put(newProposal.id,newProposal);
+        proposals.put(proposalsID,newProposal);
 
         return #Ok(newProposal);
         
     };
 
     public shared({caller}) func vote(proposal_id : Int, yes_or_no : Bool) : async {#Ok : (Nat, Nat); #Err : Text} {
-        return #Err("Not implemented yet");
+        
+
+        var proposal : ?Proposal = await get_proposal(proposal_id);
+        switch(proposal) {
+            case(null) {return #Err("Null Proposal" );};
+            case(?something) {return #Ok(0,0); };
+        };
+        return #Err("Not implemented yet " );
     };
 
-    public query func get_proposal(id : Nat) : async ?Proposal {
+    public query func get_proposal(id : Int) : async ?Proposal {
         return proposals.get(id);
     };
     
@@ -126,7 +125,7 @@ actor {
 
 
     system func preupgrade() {
-    proposalEntries := Iter.toArray<(Nat,Proposal)>(proposals.entries());
+    proposalEntries := Iter.toArray<(Int,Proposal)>(proposals.entries());
   };
 
   system func postupgrade() {
