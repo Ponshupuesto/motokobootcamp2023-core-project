@@ -61,11 +61,6 @@ actor {
     public type Balance__1 = Nat;
 
 
-
-    type Tokens={
-        amount:Nat;
-    };
-
     let MotokoToken : actor {icrc1_balance_of : shared query Account__1 -> async Balance__1;
     } = actor("db3eq-6iaaa-aaaah-abz6a-cai");
 
@@ -105,13 +100,47 @@ actor {
     };
 
     public shared({caller}) func vote(proposal_id : Int, yes_or_no : Bool) : async {#Ok : (Nat, Nat); #Err : Text} {
-        
+        let balance = await getMbBalance(caller);
+        if(balance >= 1){
+            var proposal : ?Proposal = await get_proposal(proposal_id);
+            let votingPower = balance / 100000000;
+            switch(proposal) {
+                case(null) {return #Err("Null Proposal" );};
+                case(?something) {
+                    switch(yes_or_no) {
+                        case(true) {
+                            var newVote = something.votes.0 + votingPower;
+                            let updateVote : Proposal = {
+                                creator = something.creator;
+                                payload = something.payload;
+                                status = something.status;
+                                timestamp = something.timestamp;
+                                voters = something.voters;
+                                votes = (votingPower,something.votes.1);
+                            };
+                            proposals.put(proposal_id,updateVote);
+                            return #Ok(updateVote.votes.0,something.votes.1);
+                        };
+                        case(false) {
+                            var newVote = something.votes.1 + votingPower;
+                            let updateVote : Proposal = {
+                                creator = something.creator;
+                                payload = something.payload;
+                                status = something.status;
+                                timestamp = something.timestamp;
+                                voters = something.voters;
+                                votes = (something.votes.0,votingPower);
+                            };
+                            proposals.put(proposal_id,updateVote);
+                            return #Ok(something.votes.0,updateVote.votes.1);                            
+                        };
+                    };
 
-        var proposal : ?Proposal = await get_proposal(proposal_id);
-        switch(proposal) {
-            case(null) {return #Err("Null Proposal" );};
-            case(?something) {return #Ok(0,0); };
+                    return #Err("Unknown"); 
+                    };
         };
+        };
+        
         return #Err("Not implemented yet " );
     };
 

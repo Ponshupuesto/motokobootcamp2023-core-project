@@ -7,9 +7,8 @@
   <p>{post[1].creator.owner.toString()}</p>
   <p>Change website text to: {post[1].payload}</p>
   <p>
-    Yes: {(post[1].votes[0] / BigInt(100000000)).toString()}, No: {(
-      post[1].votes[1] / BigInt(100000000)
-    ).toString()}
+    Yes: {post[1].votes[0].toString()}, No: {
+      post[1].votes[1].toString()}
   </p>
 </div>
 

@@ -88,7 +88,7 @@
                 <h1 class="slogan">Loading...</h1>
               {:then res2}
                 <p style="color: white">
-                  Voted successfully! Current votes: {res2}
+                  Voted successfully! xD Current votes: {res2.toString()}
                 </p>
               {:catch error}
                 <p style="color: red">{error.message}</p>
